@@ -2,8 +2,8 @@ from sharedUtils.logger import Logger
 from sharedUtils.network_manager import setup_wlan, start_server
 from utils.command_dispatcher import handle_request
 
-SSID      = "Igor"
-PASSWORD  = "igor_sokolov"
+SSID      = "name"
+PASSWORD  = "password"
 
 logger = Logger("[PICO] ")
 logger.log("Starting up")
