@@ -1,7 +1,7 @@
 import ujson
 from sharedUtils.servo import Servo
 
-_servo = Servo(pin_num=16)
+_servo = Servo(pin_num=15)
 
 def handle_request(body_bytes):
     try:
