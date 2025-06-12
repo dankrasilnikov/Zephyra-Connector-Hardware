@@ -1,29 +1,30 @@
-import network, time, socket
+import network, uasyncio as aio
+from time import ticks_ms, ticks_diff
 
-def setup_wlan(ssid, password):
-    wlan = network.WLAN(network.STA_IF)
-    wlan.active(True)
-    wlan.connect(ssid, password)
-    while not wlan.isconnected():
-        time.sleep(0.5)
-    return wlan
+async def setup_wlan(ssid: str, password: str, timeout_ms: int = 15_000, *, led=None):
+    sta = network.WLAN(network.STA_IF)
+    sta.active(True)
 
-def cleanup_port(port=80):
+    if not sta.isconnected():
+        sta.connect(ssid, password)
+        t0 = ticks_ms()
+        while not sta.isconnected():
+            if ticks_diff(ticks_ms(), t0) > timeout_ms:
+                raise RuntimeError("WLAN: timeout")
+            if led:
+                led.toggle()
+            await aio.sleep_ms(200)
+
+    if led:
+        led.off()
+    return sta
+
+def _disable_ap():
     ap = network.WLAN(network.AP_IF)
-    ap.active(False)
+    if ap.active():
+        ap.active(False)
 
-def start_server(port=80, reuse_addr=True):
-    cleanup_port(port)
-
-    addr = socket.getaddrinfo('0.0.0.0', port)[0][-1]
-    s = socket.socket()
-
-    if reuse_addr:
-        try:
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        except:
-            pass
-
-    s.bind(addr)
-    s.listen(1)
-    return s, addr
+async def start_server(handler, port: int = 80, backlog: int = 4):
+    _disable_ap()
+    srv = await aio.start_server(handler, "0.0.0.0", port, backlog=backlog)
+    return srv
